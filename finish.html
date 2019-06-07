@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, user-scalable=no" />
+    <script>
+      /*
+       * onload function.
+       */
+      function setHome(){
+        google.script.run.withSuccessHandler(setTable).getListNotKnow();
+      }
+      function setTable(tableChild){
+        document.getElementById("listNotKnow").innerHTML = tableChild;
+        var buttonHome = document.getElementById("buttonHome");
+        buttonHome.addEventListener("click", goToHome);
+        buttonHome.disabled = false;
+        buttonHome.focus();
+      }
+      function goToHome(){ 
+        google.script.run.withSuccessHandler(changePage).getPage("index");
+      }
+      function changePage(page){
+        document.write(page);
+        document.close(); // Important. will execute javascript after execute that document.close().
+      }
+    </script>
+  </head>
+  <body onload="setHome()">
+    <h1>Finish!</h1>
+    <button id="buttonHome" disabled>Yeah!</button>
+    <table id="listNotKnow" border="1">
+    </table>
+  </body>
+</html>
+
+
