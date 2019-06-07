@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <title>Japanese word test</title>
+    <meta name="viewport" content="width=device-width, user-scalable=no" />
+    <script>
+      /*
+       * onload function.
+       */
+      function requestSheetList(){
+        /*
+         * submit button be deactivate before selected the sheet name.
+         */
+        deactivateSubmitBtn();
+        
+        /*
+         * <select> : Sheet name list. 
+         */
+        var sheetName = document.getElementsByName('sheetName')[0];
+        
+        deactivateSheetNameElement();
+        
+        google.script.run.withSuccessHandler(function(sheetList){
+          for(var i = 0; i < sheetList.length; i++){
+            var option = document.createElement('option');
+            option.value = sheetList[i];
+            option.innerHTML = sheetList[i];
+            sheetName.appendChild(option);
+          }
+          
+          activateSheetNameElement();
+          sheetName.focus();
+        }).getSheetList();
+      }
+      
+      /*
+       * Get the max number by Access to spreadsheet.
+       * and set the range.
+       */
+      function setRange(sheetName){    
+        /*
+         * Be blank the range of word.
+         */
+        setMin('');
+        setMax('');
+        
+        /*
+         * Prevent the script run request and prevent the submit during running the script.
+         */
+        deactivateSheetNameElement();
+        deactivateSubmitBtn();
+                
+        if(sheetName == ''){
+          /*
+           * Now, Can select sheet name!
+           */
+          activateSheetNameElement();
+          
+          return;
+        }        
+        
+        google.script.run.withSuccessHandler(function(max){
+          var min = 1;
+          
+          setMin(min);
+          setMax(max);
+        
+          document.getElementsByName("numMin")[0].focus();
+          
+          /*
+           * submit button will active when selected the sheet name.
+           */
+          activateSubmitBtn();
+          
+          /*
+           * Now, Can select sheet name!
+           */
+          activateSheetNameElement();
+        }).getWordRange(sheetName);
+      }
+      
+      /*
+       * Activate <select> : sheet name list.
+       */
+      function activateSheetNameElement(){
+        var sheetNameElement = document.getElementsByName('sheetName')[0];
+
+        sheetNameElement.disabled = false;
+      }
+      
+      /*
+       * Deactivate <select> : sheet name list.
+       */
+      function deactivateSheetNameElement(){
+        var sheetNameElement = document.getElementsByName('sheetName')[0];
+
+        sheetNameElement.disabled = true;
+      }
+      
+      /*
+       * Activate <input>-submit : Start the word test.
+       */
+      function activateSubmitBtn(){
+        var submitBtn = document.getElementById('submitBtn');
+
+        submitBtn.disabled = false;
+      }
+      
+      /*
+       * Deactivate <input>-submit : Start the word test.
+       */
+      function deactivateSubmitBtn(){
+        var submitBtn = document.getElementById('submitBtn');
+
+        submitBtn.disabled = true;
+      }
+      
+      /*
+       * Set the minimum value of word range.
+       */
+      function setMin(value){
+        var min = document.getElementById('min');
+        min.innerHTML = value;      
+        min.value = value;
+      }
+      
+      /*
+       * Set the maximum value of word range.
+       */
+      function setMax(value){
+        var max = document.getElementById('max');
+        max.innerHTML = value;      
+        max.value = value;
+      }
+      
+      function submitData(formObject){
+        /*
+         * sheet name of selected.
+         */
+        var sheetName = document.getElementsByName('sheetName')[0];
+        
+        /*
+         * Minimum, maximum number of word test.
+         */
+        var numMin = formObject.numMin;
+        var numMax = formObject.numMax;
+           
+        /*
+         * Order? Random?
+         * select of player.
+         */
+        var testType = formObject.testType;
+     
+        if( !(validateNumber(numMin, numMax)) ){
+          return false;
+        }
+        
+        if( !(checkNumber(numMin, numMax)) ){
+          return false;
+        }
+        
+        /* withSuccessHandler executed after executed the function of code.gs
+         * and parameter of function used parameter of withSuccessHandler is return value of code.gs
+         */ 
+        google.script.run.setSheetName(sheetName.value);
+        google.script.run.setWordOption(numMin.value, numMax.value, testType.value);
+        google.script.run.withSuccessHandler(changePage).getPage("select");
+        return false;
+      }
+      
+      function validateNumber(numMin, numMax){
+        var regExp = /^\d{1,}$/; // If number?
+        
+        if( !(regExp.test(numMin.value)) ){
+          window.alert("Please, input the number.");
+          
+          numMin.value = "";
+          numMin.focus();
+          
+          return false;
+        }
+        if( !(regExp.test(numMax.value)) ){
+          window.alert("Please, input the number.");
+          
+          numMax.value = "";
+          numMax.focus();
+          
+          return false;
+        }
+        
+        return true;
+      }
+      
+      function checkNumber(numMin, numMax){
+        var min = document.getElementById("min").value;
+        var max = document.getElementById("max").value;
+      
+        if(numMin.value < min || numMin.value > max){
+          window.alert("Range : " + min + " ~ " + max);
+          numMin.value = "";
+          numMin.focus();
+          return false;
+        }
+        if(numMax.value < min || numMax.value > max){
+          window.alert("Range : " + min + " ~ " + max);
+          numMax.value = "";
+          numMax.focus();
+          return false;
+        }
+      
+        if(numMin.value*1 > numMax.value*1){
+          window.alert("min is should smaller than max.");
+          numMin.value = "";
+          numMin.focus();
+          return false;
+        }
+        
+        return true;
+      }
+      
+      // I guess that execute function below if success the code.gs
+      function changePage(page){
+        document.write(page);
+        document.close(); // Important. will execute javascript after execute that document.close().
+      }
+    </script>
+  </head>
+  <body onload="requestSheetList()">
+    <h1>Japanese word test</h1>
+    <h2>Insert that If you want range of Test (Number of Excel)</h2>
+    <select name="sheetName" onchange="setRange(this.value)">
+      <option value="">-select-</option>
+    </select>
+    <h3>(Range : <span id="min"></span> ~ <span id="max"></span>)</h3>
+    <form onsubmit="return submitData(this)">
+      <span>min</span> <input type="text" name="numMin" />
+      <input type="text" name="numMax" /><span> max</span><br />
+      <input type="radio" name="testType" value="Order" checked /><span>order</span>
+      <input type="radio" name="testType" value="Random" /><span>random</span><br />
+      <input id="submitBtn" type="submit" value="Submit" />
+    </form>
+  </body>
+</html>
+
+

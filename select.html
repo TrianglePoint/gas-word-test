@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, user-scalable=no" />
+    <style>
+      #kanji{
+        width: 10rem;
+        height: 5rem;
+        line-height: 5rem;
+        text-align: center;
+      }
+      #next{
+        width: 10rem;
+        height: 5rem;
+        font-size: 3rem;
+      }
+      #listNotKnow{
+        text-align: center;
+      }
+    </style>
+    <script>        
+      var words = [];
+      var selectedIndex = -1;
+      
+      /*
+       * onload function.
+       */
+      function loadWords(){
+        google.script.run.withSuccessHandler(function(data){
+          words = data.words;
+          if(data.testType == "Order"){
+            document.getElementById("next").addEventListener("click", selectWordByOrder);
+            selectWordByOrder();
+          }else{
+            document.getElementById("next").addEventListener("click", selectWordByRandom);
+            selectWordByRandom();
+          }
+          document.getElementById("pass").addEventListener("click", showAnswer);
+        }).getWords();
+      }
+      
+      function selectWordByOrder(){
+        if(words.length == 0){
+          google.script.run.setListNotKnow(document.getElementById("listNotKnow").innerHTML);
+          google.script.run.withSuccessHandler(changePage).getPage("finish");
+          return false;
+        }
+        selectedIndex = 0;
+        showWord();
+
+        return false;
+      }
+      function selectWordByRandom(){
+        if(words.length == 0){
+          google.script.run.setListNotKnow(document.getElementById("listNotKnow").innerHTML);
+          google.script.run.withSuccessHandler(changePage).getPage("finish");
+          return false;
+        }
+        selectedIndex = Math.floor(Math.random() * words.length);
+        showWord();
+        
+        return false;
+      }
+      function showAnswer(){
+        var yomigana = document.getElementById("yomigana");
+        var hangul = document.getElementById("hangul");
+        yomigana.value = words[selectedIndex].yomigana;
+        yomigana.disabled = true;
+        hangul.value = words[selectedIndex].hangul;
+        hangul.disabled = true;
+        
+        addNotKnowWord();
+        checkHangul(hangul);
+      }
+      
+      function addNotKnowWord(){
+        var frame = '<tr><td rowspan="2">' + words[selectedIndex].number + '</td>' + 
+          '<td>' + words[selectedIndex].yomigana + '</td>' +
+          '<td rowspan="2">' + words[selectedIndex].hangul + '</td></tr>' + 
+          '<tr><td>' + words[selectedIndex].kanji + '</td></tr>';
+          
+        document.getElementById("listNotKnow").innerHTML += frame;
+      }
+      
+      function showWord(){
+        var yomigana = document.getElementById("yomigana");
+        document.getElementById("kanji").innerHTML = words[selectedIndex].kanji;
+        yomigana.value = "";
+        yomigana.disabled = false;
+        document.getElementById("hangul").value = "";
+        document.getElementById("next").disabled = true;
+        yomigana.focus();
+        document.getElementById("pass").disabled = false;
+      }
+      
+      function checkYomigana(yomigana){
+        if(yomigana.value == words[selectedIndex].yomigana){
+          yomigana.disabled = true;
+          var hangul = document.getElementById("hangul");
+          hangul.disabled = false;
+          hangul.focus();
+        }
+      }
+      function checkHangul(hangul){
+        if(hangul.value == words[selectedIndex].hangul){
+          document.getElementById("pass").disabled = true;
+          hangul.disabled = true;
+          words.splice(selectedIndex, 1);
+          var next = document.getElementById("next");
+          next.disabled = false;
+          next.focus();
+        }
+      }
+      
+      function changePage(page){
+        document.write(page);
+        document.close(); // Important. will execute javascript after execute that document.close().
+      }
+    </script>
+  </head>
+  <body onload="loadWords()">
+    <form id="wordContainer" onsubmit="return false">
+      <table>
+        <input type="text" id="yomigana" oninput="checkYomigana(this)" disabled />
+        <h1 id="kanji"></h1>
+        <input type="text" id="hangul" oninput="checkHangul(this)" disabled/>
+      </table><br />
+      <input type="submit" id="next" value="Next" disabled />
+    </form>
+    <br />
+    <button id="pass" disabled>I don't know!</button>
+    <table id="listNotKnow" border="1">
+      <tr>
+        <th colspan="3">You not know the below words.</th>
+      </tr>
+    </table>
+  </body>
+</html>
+
+
